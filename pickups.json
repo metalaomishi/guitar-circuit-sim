@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Seymour Duncan SH-1 '59 (Vintage PAF)",
+    "L_pu": 3.9,
+    "R_pu": 7600,
+    "C_pu": 1.36e-10
+  },
+  {
+    "name": "Gibson Burstbucker Type 1 (Vintage)",
+    "L_pu": 4.0,
+    "R_pu": 7400,
+    "C_pu": 1.20e-10
+  },
+  {
+    "name": "Seymour Duncan SH-4 JB (High-Output)",
+    "L_pu": 8.1,
+    "R_pu": 16400,
+    "C_pu": 1.28e-10
+  },
+  {
+    "name": "Gibson 498T Hot Alnico (High-Output)",
+    "L_pu": 9.2,
+    "R_pu": 14200,
+    "C_pu": 3.00e-10
+  },
+  {
+    "name": "Fender Standard Single-Coil",
+    "L_pu": 3.0,
+    "R_pu": 6000,
+    "C_pu": 1.00e-10
+  }
+]
