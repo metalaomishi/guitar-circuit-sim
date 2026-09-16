@@ -165,6 +165,15 @@ def on_model_change():
         st.session_state.base_cap_selection = 0.022
     st.session_state.drift_value = 0.0  # ギター変更時は誤差もリセット
 
+# コンデンサ容量復帰ボタンが押されたときの処理
+def reset_to_normal_callback():
+    """現在のギターの種類に応じて、コンデンサ値と誤差をノーマルに戻す"""
+    if st.session_state.model_selection == "Stratocaster":
+        st.session_state.base_cap_selection = 0.047
+    else:
+        st.session_state.base_cap_selection = 0.022
+    st.session_state.drift_value = 0.0
+
 # ==========================================
 # 5. Web UI 画面レイアウト
 # ==========================================
@@ -192,74 +201,73 @@ with col_ctrl:
     
     st.text(f"【PUスペック】 直流抵抗: {pu_param['R_pu']/1000:.1f}kΩ / インダクタンス: {pu_param['L_pu']:.1f}H")
     
-    # 3. モディファイ・特殊オプション
-    st.subheader("モディファイ・特殊オプション", divider=True)
-
-    is_treble_bleed = st.checkbox("スムーステーパー (Treble Bleed) 有効化")
-    has_esr = st.checkbox("疑似オイルコンデンサ (ESR内部損失 120Ωを付加)")
-    pot_curve = st.selectbox("ポットのカーブ特性", ["A-Curve (Audio/Log)", "B-Curve (Linear)"])
-
-    # --- オイルコンデンサのESR（直列抵抗）成分の処理 ---
-    # 聴感変化を体感しやすいよう、オイルの不完全な損失成分(あえて実効的な120Ω)をシミュレート
-    R_esr = 120.0 if has_esr else 0.0
-    
-    # 4. コントロールノブ操作
+    # 3. コントロールノブ操作
     st.subheader("コントロールノブ操作", divider=True)
     vol_pos = st.slider("Volume Control (0 - 10)", min_value=0.0, max_value=10.0, value=10.0, step=0.5)
     tone_pos = st.slider("Tone Control (0 - 10)", min_value=0.0, max_value=10.0, value=10.0, step=0.5)
-    
+
+    tab1, tab2, tab3 = st.tabs(["Modify", "Capacitor", "Memory"])
+
+    # 4. モディファイ・特殊オプション
+    with tab1:
+        st.subheader("モディファイ・特殊オプション", divider=True)
+
+        is_treble_bleed = st.checkbox("スムーステーパー (Treble Bleed) 有効化")
+        has_esr = st.checkbox("疑似オイルコンデンサ (ESR内部損失 120Ωを付加)")
+        is_b_curve = st.checkbox("Bカーブポット (リニア特性) に変更")
+
+        pot_curve = "B-Curve (Linear)" if is_b_curve else "A-Curve (Audio/Log)"
+
+        # --- オイルコンデンサのESR（直列抵抗）成分の処理 ---
+        # 聴感変化を体感しやすいよう、オイルの不完全な損失成分(あえて実効的な120Ω)をシミュレート
+        R_esr = 120.0 if has_esr else 0.0
+
     # 5. コンデンサ
-    st.subheader("コンデンサ設定", divider=True)
+    with tab2:
+        st.subheader("コンデンサ設定", divider=True)
 
-    # コンデンサ容量復帰ボタンが押されたときの処理
-    def reset_to_normal_callback():
-        """現在のギターの種類に応じて、コンデンサ値と誤差をノーマルに戻す"""
-        if st.session_state.model_selection == "Stratocaster":
-            st.session_state.base_cap_selection = 0.047
-        else:
-            st.session_state.base_cap_selection = 0.022
-        st.session_state.drift_value = 0.0
+        # コンデンサ容量復帰ボタン
+        st.button("コンデンサ容量を戻す", on_click=reset_to_normal_callback, use_container_width=True)
 
-    # コンデンサ容量復帰ボタンの配置
-    st.button("コンデンサ容量を戻す", on_click=reset_to_normal_callback, use_container_width=True)
+        # コンデンサ基準値のセレクトボックス (keyとindexを連動)
+        # 現在のセッション状態の数値が、e12_valuesリストの何番目にあるかを自動計算して初期選択にする
+        current_index = e12_values.index(st.session_state.base_cap_selection)
+        base_cap_uf = st.selectbox(
+            "E12系列 コンデンサ基準値 (μF)", 
+            e12_values, 
+            index=current_index,
+            key="base_cap_selection"
+        )
 
-    # コンデンサ基準値のセレクトボックス (keyとindexを連動)
-    # 現在のセッション状態の数値が、e12_valuesリストの何番目にあるかを自動計算して初期選択にする
-    current_index = e12_values.index(st.session_state.base_cap_selection)
-    base_cap_uf = st.selectbox(
-        "E12系列 コンデンサ基準値 (μF)", 
-        e12_values, 
-        index=current_index,
-        key="base_cap_selection"
-    )
+        # 容量誤差スライダー (keyを連動)
+        cap_drift_pct = st.slider(
+            "容量の個体誤差・経年変化 (±20%)", 
+            min_value=-20.0, 
+            max_value=20.0, 
+            step=0.5,
+            key="drift_value"
+        )
+        
+        # E12ベース容量に±20%の誤差を適用
+        actual_cap_uf = base_cap_uf * (1.0 + (cap_drift_pct / 100.0))
+        st.info(f"実効容量: {actual_cap_uf:.4f} μF")
 
-    # 容量誤差スライダー (keyを連動)
-    cap_drift_pct = st.slider(
-        "容量の個体誤差・経年変化 (±20%)", 
-        min_value=-20.0, 
-        max_value=20.0, 
-        step=0.5,
-        key="drift_value"
-    )
-    
-    # E12ベース容量に±20%の誤差を適用
-    actual_cap_uf = base_cap_uf * (1.0 + (cap_drift_pct / 100.0))
-    st.info(f"実効容量: {actual_cap_uf:.4f} μF")
-    
     # 6. 重ね合わせ比較コントロール
-    st.subheader("💾 波形比較メモリ", divider=True)
+    with tab3:    
+        st.subheader("💾 波形比較メモリ", divider=True)
 
-    c_btn1, c_btn2 = st.columns(2)
-    with c_btn1:
-        if st.button("現在の波形を保存"):
-            current_gain = calculate_response(model_type, vol_pos, tone_pos, actual_cap_uf, pot_curve, pu_param, is_treble_bleed, R_esr)
-            label = f"{model_type} V:{vol_pos:.0f} T:{tone_pos:.0f} {actual_cap_uf:.3f}uF {'+ESR' if has_esr else ''}"
-            st.session_state.saved_curves.append({"gain": current_gain, "label": label})
-            st.rerun()
-    with c_btn2:
-        if st.button("メモリをクリア"):
-            st.session_state.saved_curves.clear()
-            st.rerun()
+        c_btn1, c_btn2 = st.columns(2)
+        with c_btn1:
+            if st.button("現在の波形を保存"):
+                current_gain = calculate_response(model_type, vol_pos, tone_pos, actual_cap_uf, pot_curve, pu_param, is_treble_bleed, R_esr)
+                label = f"{model_type} V:{vol_pos:.0f} T:{tone_pos:.0f} {actual_cap_uf:.3f}uF {'+ESR' if has_esr else ''}"
+                st.session_state.saved_curves.append({"gain": current_gain, "label": label})
+                st.rerun()
+        with c_btn2:
+            if st.button("メモリをクリア"):
+                st.session_state.saved_curves.clear()
+                st.rerun()
+
 
 with col_graph:
     st.header("📊 周波数特性グラフ")
