@@ -1,0 +1,17 @@
+# model2.txt
+配線構造タイプ:   Les Paul, Stratocaster, Flying V
+ピックアップ選択: Seymour Duncan SH-1 '59, Gibson Burstbucker Type 1 (Vintage), Seymour Duncan SH-4 JB, Gibson 498T Hot Alnico (High-Output), Fender Standard Single
+Volume Control (0 - 10):  0.0, 5.0, 10.0
+Tone Control (0 - 10): 0.0, 5.0, 10.0
+スムーステーパー (Treble Bleed) 有効化: True, False
+疑似オイルコンデンサ (ESR内部損失 120Ωを付加): True, False
+Bカーブポット (リニア特性) に変更: True, False
+E12系列 コンデンサ基準値 (μF): 0.010, 0.012, 0.015, 0.018, 0.022, 0.027, 0.033, 0.039, 0.047, 0.056, 0.068, 0.082, 0.100
+容量の個体誤差・経年変化 (±20%): -20.0, 0.0, 20.0
+現在の波形保存数: 0, 1, 2, 3, 4, 5
+
+# 禁則条件の追加
+IF [配線構造タイプ] in {"Les Paul", "Flying V"} 
+THEN [ピックアップ選択] <> "Fender Standard Single";
+
+# IF ["Volume Control (0 - 10)"] = 5.0 THEN ["Tone Control (0 - 10)"] <= 5.0;
